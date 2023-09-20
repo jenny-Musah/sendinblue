@@ -2,54 +2,48 @@ package com.sendinblue.sendinblue_app;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import sendinblue.ApiClient;
-import sendinblue.ApiException;
-import sendinblue.Configuration;
-import sibApi.TransactionalEmailsApi;
-import sibModel.SendSmtpEmail;
-import sibModel.SendSmtpEmailSender;
-import sibModel.SendSmtpEmailTo;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 
 @Service
-public class SendinBlueServiceImpl implements SendinBlueService{
+public class SendinBlueServiceImpl implements SendinBlueService {
 
     @Value("${sendinblue.mail.api_key}")
     private String apiKey;
 
+    @Value("${sendinblue.mail.url}")
+    private String mailUrl;
 
-    @Override
-    public String sendMail(SendMailRequest sendMailRequest) {
-        TransactionalEmailsApi transactionalEmailsApi = new TransactionalEmailsApi(createUser());
-        try{
-            transactionalEmailsApi.sendTransacEmail(creatEmail(sendMailRequest));
-        }catch (ApiException e){
-            System.out.println("Error " + e.getResponseBody());
-        }
-        return "Sent successfully";
+    @Value("${app.name}")
+    private String appName;
+
+    @Value("${app.email}")
+    private String appEmail;
+
+
+    @Override public String sendMail(SendMailRequest sendMailRequest) {
+
+        WebClient.builder().baseUrl(mailUrl).defaultHeader("api-key", apiKey).build()
+                .post().bodyValue(creatEmailRequest(sendMailRequest)).retrieve().bodyToMono(String.class).block() ;
+        return "Email sent Successfully";
     }
 
-    private SendSmtpEmail creatEmail(SendMailRequest sendMailRequest) {
-        SendSmtpEmail sendSmtpEmail = new SendSmtpEmail();
-
-        SendSmtpEmailTo sendSmtpEmailTo = new SendSmtpEmailTo();
-        sendSmtpEmailTo.setEmail(sendMailRequest.getTo());
-        sendSmtpEmailTo.setName(sendMailRequest.getName());
-
-        SendSmtpEmailSender sender = new SendSmtpEmailSender();
-        sender.setEmail("learnspace@learnspace.africa"); // Replace with your sender's email address
-        sender.setName("LearnSpace");     // Replace with your sender's name
-        sendSmtpEmail.setSender(sender);
-        sendSmtpEmail.setTo(List.of(sendSmtpEmailTo));
-        sendSmtpEmail.setSubject(sendMailRequest.getSubject());
-        sendSmtpEmail.setTextContent(sendMailRequest.getContent());
-        return sendSmtpEmail;
+    private EmailRequest creatEmailRequest(SendMailRequest sendMailRequest){
+        EmailRequest emailRequest = new EmailRequest();
+        emailRequest.setSender(creatInfo(appEmail, appName));
+        emailRequest.setSubject(sendMailRequest.getSubject());
+        emailRequest.setTo(List.of(creatInfo(sendMailRequest.getTo(), sendMailRequest.getName())));
+        emailRequest.setHtmlContent(sendMailRequest.getContent());
+        return emailRequest;
     }
 
-    private ApiClient createUser(){
-        ApiClient apiClient = Configuration.getDefaultApiClient();
-        apiClient.setApiKey(apiKey);
-        return apiClient;
+    private MailInfo creatInfo(String to, String name){
+        MailInfo mailInfo = new MailInfo();
+        mailInfo.setEmail(to);
+        mailInfo.setName(name);
+        return mailInfo;
     }
+
+
 }
