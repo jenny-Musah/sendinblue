@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -33,8 +35,14 @@ public class SendinBlueServiceImpl implements SendinBlueService {
         EmailRequest emailRequest = new EmailRequest();
         emailRequest.setSender(creatInfo(appEmail, appName));
         emailRequest.setSubject(sendMailRequest.getSubject());
-        emailRequest.setTo(List.of(creatInfo(sendMailRequest.getTo(), sendMailRequest.getName())));
-        emailRequest.setHtmlContent(sendMailRequest.getContent());
+        emailRequest.setTo(Collections.singleton(creatInfo(sendMailRequest.getTo(), sendMailRequest.getName())));
+        emailRequest.setHtmlContent("<h2>Hi <td> th:text= \"${firstName}\" </td> </h2>\n" +
+                "\n" +
+                "<p>You have been invited to learnspace for the role of an admin</p>\n" +
+                "\n" +
+                "<p>Kindly click on the link below to accept the invitation and get started today</p>\n" +
+                "\n" +
+                "<p><a href=\"www.google.com?invitation-token={invitationToken}\">Accept Invitation<a/></p>");
         return emailRequest;
     }
 
